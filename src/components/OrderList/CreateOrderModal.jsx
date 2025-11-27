@@ -137,7 +137,6 @@ export default function CreateOrderModal({ isOpen, onClose }) {
     setIsLoading(true);
     try {
       // Ví dụ gọi API
-      await axios.post("/api/orders", data);
 
       toast.custom((t) => (
         <div
@@ -333,4 +332,3 @@ export default function CreateOrderModal({ isOpen, onClose }) {
       </DialogContent>
     </Dialog>
   );
-}
