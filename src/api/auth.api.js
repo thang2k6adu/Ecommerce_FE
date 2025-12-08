@@ -8,3 +8,4 @@ export const authAPI = {
     axiosClient.post("/api/auth/refresh", { refresh_token: refreshToken }),
   logout: () => axiosClient.post("/api/auth/logout"),
 };
+
