@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Bell as BellIcon } from 'lucide-react';
+import { Bell as BellIcon, Image as ImageIcon, BellRing } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { orderAPI } from '@/api/order.api';
 import { formatCurrency } from '@/utils/currencyFormatter';
@@ -9,6 +9,7 @@ export default function BellComponent() {
   const navigate = useNavigate();
   const [unreviewedItems, setUnreviewedItems] = useState([]);
   const [open, setOpen] = useState(false);
+  const [failedThumbs, setFailedThumbs] = useState(new Set());
   const dropdownRef = useRef(null);
 
   // Load unreviewed items
@@ -61,12 +62,15 @@ export default function BellComponent() {
       {open && (
         <div
           ref={dropdownRef}
-          className="absolute right-0 mt-2 w-80 bg-white border rounded-xl shadow-lg z-50 overflow-hidden"
-          style={{ minWidth: 300 }}
+          className="absolute right-0 mt-2 w-96 bg-white border rounded-xl shadow-lg z-50 overflow-hidden"
+          style={{ minWidth: 420 }}
         >
-          <div className="p-3 border-b font-medium bg-gray-600 text-white">Vui lòng đánh giá sản phẩm</div>
+  <div className="p-3 border-b font-medium bg-gray-600 text-white flex items-center gap-2">
+        <BellRing className="w-5 h-5 text-white" />
+        <span>Thông báo sản phẩm</span>
+  </div>
 
-          <div className="max-h-64 overflow-auto">
+          <div className="max-h-80 overflow-auto">
             {unreviewedItems.length === 0 ? (
               <div className="p-3 text-sm text-gray-500">
                 Không có đơn hàng cần đánh giá.
@@ -75,33 +79,73 @@ export default function BellComponent() {
               unreviewedItems.map((it) => (
                 <div
                   key={it.id}
-                  className="p-3 flex items-start gap-3 hover:bg-gray-50 transition-colors bg-white border-b last:border-0"
-                  style={{ borderRadius: 8, margin: '6px 8px' }}
+                  className="group flex items-center gap-3 p-3 bg-white border-b last:border-0 rounded-md hover:bg-gray-50 transition-colors"
+                  style={{ margin: '6px 8px' }}
                 >
+                  <div className="flex-shrink-0">
+                    {(!failedThumbs.has(it.id) && (it.thumbnail || it.image)) ? (
+                      <img
+                        src={it.thumbnail || it.image}
+                        alt={it.productName || it.name || 'product'}
+                        className="w-14 h-14 rounded-md object-cover"
+                        loading="lazy"
+                        onError={() => {
+                          setFailedThumbs((s) => new Set([...s, it.id]));
+                        }}
+                        title={it.productName || it.name}
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-md bg-gray-100 flex items-center justify-center">
+                        <ImageIcon className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex-1">
-                    <div className="font-medium text-sm">
+                    <div className="font-medium text-sm" title={it.productName || it.name}>
                       {it.productName || it.name || 'Sản phẩm'}
                     </div>
                     <div className="text-xs text-gray-500">
                       Số lượng: {it.quantity} •{' '}
                       {it.unitPrice ? formatCurrency(it.unitPrice) : ''}
                     </div>
+                    {it.description && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        {it.description}
+                      </div>
+                    )}
                   </div>
 
-                  <button
-                    className="text-sm text-blue-600"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setOpen(false);
+                  <div className="flex-shrink-0">
+                    <button
+                      className="relative flex items-center justify-center text-sm font-medium bg-orange-500 text-white px-3 py-1.5 rounded-full shadow-sm hover:shadow-md transition-all duration-150 transform hover:-translate-y-0.5"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setOpen(false);
 
-                      // ensure dropdown closes before navigation
-                      setTimeout(() => {
-                        navigate('/order-success');
-                      }, 0);
-                    }}
-                  >
-                    Đánh giá
-                  </button>
+                        // ensure dropdown closes before navigation
+                        setTimeout(() => {
+                          navigate('/order-success');
+                        }, 0);
+                      }}
+                      aria-label={`Đánh giá ${it.productName || it.name || 'sản phẩm'}`}
+                    >
+                      <span className="truncate">Đánh giá</span>
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                      </span>
+                    </button>
+                  </div>
                 </div>
               ))
             )}
