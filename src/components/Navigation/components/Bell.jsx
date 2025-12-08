@@ -19,7 +19,30 @@ export default function BellComponent() {
       try {
         const res = await orderAPI.getUnreviewed();
         if (!mounted) return;
-        setUnreviewedItems(Array.isArray(res) ? res : res?.data || []);
+        const items = Array.isArray(res) ? res : res?.data || [];
+
+        // Resolve current user id: prefer parsed `user` object in localStorage
+        let currentUserId = null;
+        try {
+          const userRaw = localStorage.getItem('user');
+          if (userRaw) {
+            const userObj = JSON.parse(userRaw);
+            currentUserId = userObj?.id || userObj?._id || null;
+          }
+        } catch (e) {
+          // ignore JSON parse errors
+        }
+        if (!currentUserId) {
+          currentUserId = localStorage.getItem('userId') || localStorage.getItem('customerId');
+          console.log('Resolved currentUserId from localStorage keys:', currentUserId);
+        }
+
+        if (currentUserId) {
+            console.log('Filtering unreviewed items for userId:', currentUserId);
+          setUnreviewedItems(items.filter((it) => String(it.userId) === String(currentUserId)));
+        } else {
+          setUnreviewedItems(items);
+        }
       } catch (err) {
         console.error('Failed to load unreviewed items', err);
       }
