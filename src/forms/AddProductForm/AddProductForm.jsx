@@ -18,9 +18,7 @@ import { useEffect, useRef } from "react";
 import { uploadSingleFile } from "@/store/uploadSlice";
 
 import { useParams, useNavigate } from "react-router-dom";
-import axios from "axios";
 import { productAPI } from "@/api/product.api";
-import { API_BASE_URL } from '@/api/constant';
 
 // Hàm tạo slug từ name
 const generateSlug = (name) => {
@@ -177,13 +175,10 @@ export default function AddProductForm() {
     initialSlug.current = "";
   };
   const onSubmit = async (data) => {
-    const token = localStorage.getItem("token");
     try {
       if (isEdit) {
-  const base = API_BASE_URL || 'http://localhost:8080';
-  await axios.put(`${base}/api/products/${id}`, data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  // const base = API_BASE_URL || 'http://localhost:8080';
+  await productAPI.update(id, data);
         toast.success(" Cập nhật sản phẩm thành công!");
       } else {
         await dispatch(createProduct(data));
