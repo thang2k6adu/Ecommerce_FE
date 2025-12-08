@@ -1,16 +1,12 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { productAPI } from '@/api/product.api';
-import ProductCard from '../ProductListPage/ProductCard';
-import Spinner from '@/components/Spinner/Spinner';
 import FilterSidebar from '@/components/Filters/FilterSidebar';
-import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import SearchResultsContent from './components/SearchResultsContent';
 import '@/components/Filters/priceFillter.css';
 
 const SearchResultsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   
   // State
   const [products, setProducts] = useState([]);
@@ -25,7 +21,6 @@ const SearchResultsPage = () => {
   });
   const [availableBrands, setAvailableBrands] = useState([]);
 
-  // Filters from URL
   const [filters, setFilters] = useState({
     keyword: searchParams.get('keyword') || '',
     categoryId: searchParams.get('categoryId') || null,
@@ -165,87 +160,13 @@ const SearchResultsPage = () => {
 
         {/* Results */}
         <div className='flex-1'>
-          {/* Results Header */}
-          <div className='mb-6'>
-            <h1 className='text-2xl font-bold mb-2'>
-              {filters.keyword ? `Kết quả tìm kiếm cho "${filters.keyword}"` : 'Tất cả sản phẩm'}
-            </h1>
-            <p className='text-gray-600'>
-              Tìm thấy {pagination.totalItems} sản phẩm
-            </p>
-          </div>
-
-          {/* Products Grid */}
-          {loading ? (
-            <div className='flex justify-center items-center py-20'>
-              <Spinner />
-            </div>
-          ) : products.length === 0 ? (
-            <div className='text-center py-20'>
-              <p className='text-lg text-gray-500'>Không tìm thấy sản phẩm nào</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => navigate('/')}
-              >
-                Về trang chủ
-              </Button>
-            </div>
-          ) : (
-            <>
-              <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'>
-                {products.map((product) => (
-                  <ProductCard 
-                    key={product.id} 
-                    {...product} 
-                    title={product.name}
-                  />
-                ))}
-              </div>
-
-              {/* Pagination */}
-              {pagination.totalPages > 1 && (
-                <div className='flex justify-center items-center gap-4 mt-8'>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={!pagination.hasPrevious}
-                    onClick={() => handlePageChange(pagination.currentPage - 1)}
-                  >
-                    <ChevronLeft size={20} />
-                  </Button>
-                  
-                  <div className='flex items-center gap-2'>
-                    {[...Array(pagination.totalPages)].map((_, index) => (
-                      <Button
-                        key={index}
-                        variant={pagination.currentPage === index ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handlePageChange(index)}
-                        className="w-10 h-10"
-                      >
-                        {index + 1}
-                      </Button>
-                    ))}
-                  </div>
-
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    disabled={!pagination.hasNext}
-                    onClick={() => handlePageChange(pagination.currentPage + 1)}
-                  >
-                    <ChevronRight size={20} />
-                  </Button>
-                </div>
-              )}
-
-              {/* Pagination Info */}
-              <div className='text-center mt-4 text-sm text-gray-600'>
-                Trang {pagination.currentPage + 1} / {pagination.totalPages}
-              </div>
-            </>
-          )}
+          <SearchResultsContent
+            loading={loading}
+            products={products}
+            pagination={pagination}
+            filters={filters}
+            onPageChange={handlePageChange}
+          />
         </div>
       </div>
     </div>
