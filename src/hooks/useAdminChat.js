@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import toast from "react-hot-toast";
 import { getUserId } from "@/utils/auth";
+import { getUser } from "@/utils/jwt-helper";
 import { formatTime, formatDate } from "@/utils/date";
 import {
   // Thunks
@@ -58,6 +59,15 @@ export function useAdminChat() {
 
   const messagesEndRef = useRef(null);
   const currentUserId = useRef(null);
+  const pendingMessages = useRef(new Map()); // Track optimistic messages by temp ID
+
+  // Initialize current user ID
+  useEffect(() => {
+    const user = getUser();
+    if (user) {
+      currentUserId.current = user.id || user.userId || user._id;
+    }
+  }, []);
 
   // Load users from API - chỉ load nếu chưa loaded hoặc force refresh
   const fetchUsers = useCallback((forceRefresh = false) => {
@@ -90,6 +100,40 @@ export function useAdminChat() {
       }
 
       if (type === "message") {
+        // Skip empty messages
+        if (!data.content || !data.content.trim()) {
+          return;
+        }
+
+        // Check if this is an echo of a message we just sent (to avoid duplicates)
+        const isEchoFromMe = data.senderId === currentUserId.current;
+        const selId = getUserId(selectedUser);
+        
+        // Check if we already have this message (to avoid duplicates from optimistic updates)
+        const hasDuplicate = messages.some(
+          (msg) =>
+            msg.content &&
+            msg.content.trim() &&
+            msg.content === data.content &&
+            msg.senderId === data.senderId &&
+            msg.receiverId === data.receiverId &&
+            Math.abs(new Date(msg.createdAt).getTime() - new Date(data.createdAt).getTime()) < 5000 // Within 5 seconds
+        );
+
+        // If this is an echo of our message and we already have it optimistically, skip it
+        if (isEchoFromMe && hasDuplicate) {
+          // This is an echo of a message we already added optimistically, skip it
+          // Update user's last message but don't add duplicate
+          dispatch(
+            updateLastMessage({
+              userId: data.senderId,
+              content: data.content,
+              createdAt: data.createdAt,
+            })
+          );
+          return;
+        }
+
         const newMsg = {
           id: data.id,
           content: data.content,
@@ -100,16 +144,22 @@ export function useAdminChat() {
           isReceived: true,
         };
 
-        const selId = getUserId(selectedUser);
-        if (selectedUser && selId === data.senderId) {
+        if (selectedUser && selId === data.senderId && !isEchoFromMe) {
+          // Message from selected user to me
           dispatch(addMessage(newMsg));
           // Mark as read
           messageAPI.markAsRead(data.senderId).catch(() => {
             toast.error("Failed to mark as read");
           });
+        } else if (isEchoFromMe && selectedUser && selId === data.receiverId) {
+          // Echo of my message - should not happen due to duplicate check above, but add just in case
+          dispatch(addMessage(newMsg));
         } else {
-          toast.success("New message received");
-          dispatch(addMessage(newMsg)); // will update unreadCounts in slice
+          // Message from other users
+          if (!hasDuplicate) {
+            toast.success("New message received");
+            dispatch(addMessage(newMsg)); // will update unreadCounts in slice
+          }
         }
 
         // Update user's last message
@@ -122,7 +172,7 @@ export function useAdminChat() {
         );
       }
     },
-    [dispatch, selectedUser]
+    [dispatch, selectedUser, messages]
   );
 
   // Initialize WebSocket
@@ -141,19 +191,40 @@ export function useAdminChat() {
       return;
     }
 
-    const payload = { receiverId: getUserId(selectedUser), content: messageText };
+    // Ensure currentUserId is set
+    if (!currentUserId.current) {
+      const user = getUser();
+      if (user) {
+        currentUserId.current = user.id || user.userId || user._id;
+      }
+      if (!currentUserId.current) {
+        toast.error("User ID not found. Please refresh the page.");
+        return;
+      }
+    }
+
+    const messageContent = messageText.trim();
+    const payload = { receiverId: getUserId(selectedUser), content: messageContent };
     const ok = sendMessage(payload);
     if (!ok) return toast.error("Failed to send");
 
+    // Add optimistic message with temporary ID
+    const tempId = `temp-${Date.now()}`;
     const msg = {
-      id: Date.now(),
-      content: messageText,
+      id: tempId,
+      content: messageContent,
       senderId: currentUserId.current,
       receiverId: getUserId(selectedUser),
       createdAt: new Date().toISOString(),
       isSent: true,
     };
     dispatch(addMessage(msg));
+    
+    // Clear message text after sending
+    dispatch(setMessageText(""));
+    
+    // Store temp ID for potential replacement
+    pendingMessages.current.set(tempId, msg);
   }, [dispatch, messageText, selectedUser]);
 
   // Filter users based on search query
