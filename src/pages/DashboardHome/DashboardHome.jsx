@@ -46,37 +46,37 @@ const DashboardHome = () => {
   // Fetch initial data từ REST API
   const fetchInitialData = async () => {
     try {
-      console.log('🔄 Fetching initial dashboard data...');
+      console.log('Fetching initial dashboard data...');
       const res = await dashboardAPI.getKpi();
-      console.log('📊 Initial KPI data:', res);
+      console.log('Initial KPI data:', res);
       
       setKpi(res);
       
       // Set initial top lists if available
       if (res.topProducts) {
-        console.log('📦 Setting initial top products:', res.topProducts);
+        console.log('Setting initial top products:', res.topProducts);
         setTopProducts(res.topProducts);
       }
       if (res.topCustomers) {
-        console.log('👑 Setting initial top customers:', res.topCustomers);
+        console.log('Setting initial top customers:', res.topCustomers);
         setTopCustomers(res.topCustomers);
       }
 
-      // 🔧 FIX: Manually trigger refresh để lấy chart data
+      // FIX: Manually trigger refresh để lấy chart data
       try {
         await dashboardAPI.refresh();
-        console.log('✅ Triggered dashboard refresh for chart data');
+        console.log('Triggered dashboard refresh for chart data');
       } catch (refreshError) {
-        console.warn('⚠️ Failed to trigger refresh:', refreshError);
+        console.warn('Failed to trigger refresh:', refreshError);
       }
     } catch (error) {
-      console.error('❌ Failed to fetch initial KPI:', error);
+      console.error('Failed to fetch initial KPI:', error);
     }
   };
   
   // Handle KPI Update với animation
   const handleKpiUpdate = useCallback((payload) => {
-    console.log('📊 KPI Update received:', payload);
+  console.log('KPI Update received:', payload);
     setKpi(prev => {
       // Trigger animation nếu giá trị thay đổi
       if (prev.processingOrders !== payload.processingOrders) {
@@ -145,13 +145,13 @@ const DashboardHome = () => {
 
   // Handle Top Products Update
   const handleTopProducts = useCallback((payload) => {
-    console.log('📦 Received TOP_PRODUCTS:', payload);
+    console.log('Received TOP_PRODUCTS:', payload);
     setTopProducts(payload);
   }, []);
 
   // Handle Top Customers Update
   const handleTopCustomers = useCallback((payload) => {
-    console.log('👑 Received TOP_CUSTOMERS:', payload);
+    console.log('Received TOP_CUSTOMERS:', payload);
     setTopCustomers(payload);
   }, []);
 
@@ -159,11 +159,11 @@ const DashboardHome = () => {
   const handleWebSocketMessage = useCallback((event) => {
     try {
       const message = JSON.parse(event.data);
-      console.log('📡 Received WebSocket message:', message.type, message.payload);
+  console.log('Received WebSocket message:', message.type, message.payload);
 
       switch (message.type) {
         case 'CONNECTION_SUCCESS':
-          console.log('🎉 WebSocket connected:', message.payload);
+          console.log('WebSocket connected:', message.payload);
           break;
 
         case 'KPI_UPDATE':
@@ -183,29 +183,29 @@ const DashboardHome = () => {
           break;
 
         case 'HOURLY_REVENUE':
-          console.log('📈 Hourly revenue data:', message.payload);
+          console.log('Hourly revenue data:', message.payload);
           if (Array.isArray(message.payload) && message.payload.length > 0) {
             setHourlyRevenue(message.payload);
           } else {
-            console.warn('⚠️ Hourly revenue data is empty or invalid');
+            console.warn('Hourly revenue data is empty or invalid');
           }
           break;
 
         case 'ORDER_STATUS_DISTRIBUTION':
-          console.log('📊 Order status distribution:', message.payload);
+          console.log('Order status distribution:', message.payload);
           if (message.payload && typeof message.payload === 'object') {
             const distArray = Object.entries(message.payload).map(([status, count]) => ({
               status,
               count
             }));
-            console.log('📊 Converted distribution array:', distArray);
+            console.log('Converted distribution array:', distArray);
             if (distArray.length > 0) {
               setOrderStatusDist(distArray);
             } else {
-              console.warn('⚠️ Order status distribution is empty');
+              console.warn('Order status distribution is empty');
             }
           } else {
-            console.warn('⚠️ Invalid order status distribution payload');
+            console.warn('Invalid order status distribution payload');
           }
           break;
 
@@ -218,16 +218,16 @@ const DashboardHome = () => {
           break;
 
         default:
-          console.log('❓ Unknown event type:', message.type);
+          console.log('Unknown event type:', message.type);
       }
     } catch (error) {
-      console.error('❌ Failed to parse WebSocket message:', error);
+      console.error('Failed to parse WebSocket message:', error);
     }
   }, [handleKpiUpdate, handleNewOrder, handleOrderStatusChanged, handleRevenueUpdate, handleTopProducts, handleTopCustomers]);
 
   // Setup WebSocket với WebSocketManager
   useEffect(() => {
-    console.log('🚀 Dashboard initializing...');
+    console.log('Dashboard initializing...');
     
     // Fetch initial data
     fetchInitialData();
@@ -240,19 +240,19 @@ const DashboardHome = () => {
 
     // Event handlers
     ws.on('open', () => {
-      console.log('✅ Connected to Dashboard WebSocket');
+      console.log('Connected to Dashboard WebSocket');
       setWsStatus(t('admin.dashboard.connected'));
     });
 
     ws.on('message', handleWebSocketMessage);
 
     ws.on('error', (error) => {
-      console.error('❌ WebSocket error:', error);
+      console.error('WebSocket error:', error);
       setWsStatus(t('admin.dashboard.connectionError'));
     });
 
     ws.on('close', () => {
-      console.log('❌ WebSocket closed');
+      console.log('WebSocket closed');
       setWsStatus(t('admin.dashboard.disconnected'));
     });
 
@@ -264,7 +264,7 @@ const DashboardHome = () => {
 
     // Cleanup
     return () => {
-      console.log('🧹 Cleaning up dashboard...');
+      console.log('Cleaning up dashboard...');
       if (wsRef.current) {
         wsRef.current.close();
         wsRef.current = null;
