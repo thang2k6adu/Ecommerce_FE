@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { agentAPI } from "@/api/agent.api";
-import { Bot, Send, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useTranslation } from "react-i18next";
+import ChatHeader from "./components/ChatHeader";
+import MessageList from "./components/MessageList";
+import ChatInput from "./components/ChatInput";
 
 const SYSTEM_PROMPT = `Bạn là một AI assistant chuyên giúp admin quản lý đơn hàng trong hệ thống e-commerce. 
 Nhiệm vụ chính của bạn:
@@ -485,86 +487,19 @@ export default function AdminAgent() {
 
   return (
     <div className="flex flex-col h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center">
-            <Bot className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-semibold text-gray-900">{t('admin.agent.title')}</h1>
-            <p className="text-sm text-gray-500">{t('admin.agent.subtitle')}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-          >
-            <div
-              className={`max-w-[70%] rounded-2xl px-4 py-3 ${
-                msg.role === "user"
-                  ? "bg-blue-600 text-white rounded-br-sm"
-                  : "bg-white text-gray-800 border border-gray-200 rounded-bl-sm"
-              }`}
-            >
-              <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-              <div className="text-xs mt-2 opacity-70">
-                {new Date(msg.timestamp).toLocaleTimeString("vi-VN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </div>
-            </div>
-          </div>
-        ))}
-        
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3">
-              <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
-            </div>
-          </div>
-        )}
-        
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input */}
-      <div className="bg-white border-t border-gray-200 px-6 py-4">
-        <div className="flex items-center gap-3">
-          <input
-            type="text"
-            placeholder={t('admin.agent.placeholder')}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={isLoading}
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-full 
-              focus:border-blue-600 focus:ring-2 focus:ring-blue-100 
-              disabled:bg-gray-100 disabled:cursor-not-allowed"
-          />
-          <button
-            onClick={handleSendMessage}
-            disabled={!inputText.trim() || isLoading}
-            className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center 
-              hover:bg-blue-700 active:scale-95 disabled:bg-gray-300 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              <Send className="w-5 h-5" />
-            )}
-          </button>
-        </div>
-        <p className="text-xs text-gray-500 mt-2 px-2">
-          💡 {t('admin.agent.suggestion')}
-        </p>
-      </div>
+      <ChatHeader />
+      <MessageList 
+        messages={messages} 
+        isLoading={isLoading} 
+        messagesEndRef={messagesEndRef}
+      />
+      <ChatInput
+        inputText={inputText}
+        setInputText={setInputText}
+        isLoading={isLoading}
+        onSendMessage={handleSendMessage}
+        onKeyPress={handleKeyPress}
+      />
     </div>
   );
 }
